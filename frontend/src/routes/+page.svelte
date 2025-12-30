@@ -155,7 +155,6 @@
     <div class="main-content">
         <aside class="sidebar" style="width: {sidebarWidth}px;">
             <FileExplorer />
-            <FilterPanel {data} {filters} bind:filteredData />
             <button
                 class="resizer"
                 aria-label="Resize sidebar"
