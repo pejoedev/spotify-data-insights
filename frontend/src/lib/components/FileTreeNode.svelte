@@ -144,12 +144,6 @@
             <span class="icon">{getIcon(node)}</span>
             <span class="name">{node.name}</span>
         </button>
-        <button class="action-btn rename" title="Rename" on:click={renameNode}
-            >✏️</button
-        >
-        <button class="action-btn delete" title="Delete" on:click={deleteNode}
-            >🗑️</button
-        >
     </div>
     {#if node.type === "directory" && $expandedFolders.has(node.path) && node.children}
         <div class="children">

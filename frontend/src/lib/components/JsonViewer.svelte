@@ -1,4 +1,67 @@
 <script lang="ts">
+    let showActions = true;
+    import { selectedFile, fileTree } from "$lib/stores/fileStore";
+    import {
+        renameFile,
+        deleteFile,
+        getFileTree,
+        getUploadedFolders,
+    } from "$lib/api/files";
+
+    let actionsLoading = false;
+
+    async function refreshFileTree() {
+        const result = await getUploadedFolders();
+        const folders = result.folders;
+        if (folders.length === 0) {
+            fileTree.set([]);
+            return;
+        }
+        const trees = await Promise.all(
+            folders.map(async (folder) => {
+                const res = await getFileTree(folder);
+                return {
+                    name: folder,
+                    path: folder,
+                    type: "directory",
+                    children: res.fileTree,
+                };
+            }),
+        );
+        fileTree.set(trees);
+    }
+
+    async function handleRename() {
+        if (!path) return;
+        const currentName = path.split("/").pop();
+        const newName = prompt("Rename to:", currentName);
+        if (!newName || newName === currentName) return;
+        actionsLoading = true;
+        try {
+            const result = await renameFile(path, newName);
+            selectedFile.set(result.newPath);
+            await refreshFileTree();
+        } catch (e) {
+            alert("Rename failed: " + (e instanceof Error ? e.message : e));
+        } finally {
+            actionsLoading = false;
+        }
+    }
+
+    async function handleDelete() {
+        if (!path) return;
+        if (!confirm(`Delete '${path}'? This cannot be undone.`)) return;
+        actionsLoading = true;
+        try {
+            await deleteFile(path);
+            selectedFile.set(null);
+            await refreshFileTree();
+        } catch (e) {
+            alert("Delete failed: " + (e instanceof Error ? e.message : e));
+        } finally {
+            actionsLoading = false;
+        }
+    }
     import { writable } from "svelte/store";
     import FilterPanel from "./FilterPanel.svelte";
 
@@ -151,7 +214,6 @@
 
 <div class="json-viewer">
     <div class="file-header">
-        <span class="file-path">{path}</span>
         {#if isArray && parsedData}
             <span class="item-count"
                 >{filteredData.length} / {parsedData.length} items</span
@@ -205,6 +267,72 @@
 </div>
 
 <style>
+    .actions-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem 0.5rem 1rem;
+        background: #252525;
+        border-bottom: 1px solid #3c3c3c;
+    }
+    .actions-bar.collapsed {
+        padding-bottom: 0.2rem;
+    }
+    .toggle-btn {
+        background: none;
+        border: none;
+        color: #4ec9b0;
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-right: 1rem;
+        cursor: pointer;
+        padding: 0.2em 0.7em;
+        border-radius: 3px;
+        opacity: 0.8;
+        transition:
+            opacity 0.1s,
+            background 0.1s;
+    }
+    .toggle-btn:hover {
+        opacity: 1;
+        background: #2a2d2e;
+    }
+    .actions-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem 0.5rem 1rem;
+        background: #252525;
+        border-bottom: 1px solid #3c3c3c;
+    }
+    .actions-title {
+        font-size: 0.95rem;
+        color: #4ec9b0;
+        margin-right: 1rem;
+        font-weight: 600;
+    }
+    .action-btn {
+        background: none;
+        border: none;
+        color: #858585;
+        cursor: pointer;
+        font-size: 1em;
+        padding: 0.2em 0.7em;
+        border-radius: 3px;
+        opacity: 0.7;
+        transition:
+            opacity 0.1s,
+            background 0.1s;
+    }
+    .action-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+    .action-btn:hover:not(:disabled) {
+        opacity: 1;
+        color: #e0e0e0;
+        background: #2a2d2e;
+    }
     .json-viewer {
         height: 100%;
         display: flex;
