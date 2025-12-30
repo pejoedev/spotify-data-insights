@@ -79,8 +79,19 @@
         selectedItemForModal = null;
     }
 
+    function convertSpotifyUris(text: string): string {
+        return text.replace(
+            /spotify:(track|album|artist|playlist|user):([a-zA-Z0-9]+)/g,
+            (match, type, id) => {
+                const url = `https://open.spotify.com/${type}/${id}`;
+                return `<a href="${url}" target="_blank" rel="noopener"
+                 class="spotify-link">${match}</a>`;
+            },
+        );
+    }
+
     function highlightJson(json: string): string {
-        return json
+        let result = json
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
@@ -102,9 +113,20 @@
                     return `<span class="${cls}">${match}</span>`;
                 },
             );
+
+        // Convert spotify URIs to links
+        result = result.replace(
+            /(<span class="string">")([^"]*spotify:[a-z]+:[a-zA-Z0-9]+[^"]*)(")<\/span>/g,
+            (match, startSpan, content, endSpan) => {
+                const converted = convertSpotifyUris(content);
+                return `${startSpan}${converted}${endSpan}</span>`;
+            },
+        );
+
+        return result;
     }
 
-    function convertSpotifyUris(text: string): string {
+    function convertSpotifyUrisInField(text: string): string {
         return text.replace(
             /spotify:(track|album|artist|playlist|user):([a-zA-Z0-9]+)/g,
             (match, type, id) => {
@@ -124,7 +146,7 @@
             return `<span class="number">${value}</span>`;
         if (typeof value === "string") {
             if (value.startsWith("spotify:")) {
-                return convertSpotifyUris(value);
+                return convertSpotifyUrisInField(value);
             }
             return `<span class="string">"${value}"</span>`;
         }
@@ -525,5 +547,14 @@
     .modal-json :global(.null) {
         color: #569cd6;
         font-style: italic;
+    }
+
+    .modal-json :global(.spotify-link) {
+        color: #1db954;
+        text-decoration: underline;
+    }
+
+    .modal-json :global(.spotify-link:hover) {
+        color: #1ed760;
     }
 </style>
