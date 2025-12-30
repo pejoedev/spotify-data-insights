@@ -14,6 +14,8 @@
     let expandedItems = writable<Set<number>>(new Set());
     let filters = writable<Record<string, any>>({});
     let filteredData = writable<any[]>([]);
+    let selectedItemForModal: any = null;
+    let showModal = false;
 
     $: {
         // Restore filters from localStorage when path changes
@@ -65,6 +67,41 @@
             }
             return newSet;
         });
+    }
+
+    function openModal(item: any) {
+        selectedItemForModal = item;
+        showModal = true;
+    }
+
+    function closeModal() {
+        showModal = false;
+        selectedItemForModal = null;
+    }
+
+    function highlightJson(json: string): string {
+        return json
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(
+                /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+                (match) => {
+                    let cls = "number";
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = "key";
+                        } else {
+                            cls = "string";
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = "boolean";
+                    } else if (/null/.test(match)) {
+                        cls = "null";
+                    }
+                    return `<span class="${cls}">${match}</span>`;
+                },
+            );
     }
 
     function convertSpotifyUris(text: string): string {
@@ -135,24 +172,33 @@
         <div class="list-view">
             {#each $filteredData as item, index}
                 <div class="list-item">
-                    <button
-                        class="item-header"
-                        on:click={() => toggleItem(index)}
-                    >
-                        <span class="toggle-icon"
-                            >{$expandedItems.has(index) ? "▼" : "▶"}</span
+                    <div class="item-header-wrapper">
+                        <button
+                            class="item-header"
+                            on:click={() => toggleItem(index)}
                         >
-                        <span class="item-preview">
-                            {#each Object.entries(item).slice(0, 2) as [key, value]}
-                                <span class="preview-field">
-                                    <span class="key">{key}:</span>
-                                    <span class="value"
-                                        >{String(value).slice(0, 50)}</span
-                                    >
-                                </span>
-                            {/each}
-                        </span>
-                    </button>
+                            <span class="toggle-icon"
+                                >{$expandedItems.has(index) ? "▼" : "▶"}</span
+                            >
+                            <span class="item-preview">
+                                {#each Object.entries(item).slice(0, 2) as [key, value]}
+                                    <span class="preview-field">
+                                        <span class="key">{key}:</span>
+                                        <span class="value"
+                                            >{String(value).slice(0, 50)}</span
+                                        >
+                                    </span>
+                                {/each}
+                            </span>
+                        </button>
+                        <button
+                            class="view-json-btn"
+                            on:click={() => openModal(item)}
+                            title="View full JSON"
+                        >
+                            View JSON
+                        </button>
+                    </div>
 
                     {#if $expandedItems.has(index)}
                         <div class="item-content">
@@ -173,6 +219,26 @@
         <pre class="raw-json">{content}</pre>
     {/if}
 </div>
+
+{#if showModal}
+    <div class="modal-overlay" on:click={closeModal}>
+        <div class="modal-content" on:click|stopPropagation>
+            <div class="modal-header">
+                <h2>Full JSON</h2>
+                <button
+                    class="close-btn"
+                    on:click={closeModal}
+                    aria-label="Close"
+                >
+                    ✕
+                </button>
+            </div>
+            <pre class="modal-json">{@html highlightJson(
+                    JSON.stringify(selectedItemForModal, null, 2),
+                )}</pre>
+        </div>
+    </div>
+{/if}
 
 <style>
     .json-viewer {
@@ -209,10 +275,16 @@
         overflow: hidden;
     }
 
-    .item-header {
+    .item-header-wrapper {
         display: flex;
         align-items: center;
-        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .item-header {
+        flex: 1;
+        display: flex;
+        align-items: center;
         padding: 0.75rem;
         background: none;
         border: none;
@@ -224,6 +296,25 @@
 
     .item-header:hover {
         background: #2a2d2e;
+    }
+
+    .view-json-btn {
+        margin-right: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        background: #3c3c3c;
+        border: 1px solid #555555;
+        color: #cccccc;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition:
+            background 0.1s,
+            border-color 0.1s;
+    }
+
+    .view-json-btn:hover {
+        background: #454545;
+        border-color: #707070;
     }
 
     .toggle-icon {
@@ -313,5 +404,96 @@
         line-height: 1.5;
         overflow: auto;
         color: #d4d4d4;
+    }
+
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: #252525;
+        border: 1px solid #3c3c3c;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 800px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border-bottom: 1px solid #3c3c3c;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        color: #cccccc;
+        font-size: 1.1rem;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        color: #cccccc;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 3px;
+        transition: background 0.1s;
+    }
+
+    .close-btn:hover {
+        background: #3c3c3c;
+    }
+
+    .modal-json {
+        flex: 1;
+        margin: 0;
+        padding: 1rem;
+        font-family: "Consolas", "Monaco", "Courier New", monospace;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        overflow: auto;
+        color: #d4d4d4;
+    }
+
+    .modal-json :global(.string) {
+        color: #ce9178;
+    }
+
+    .modal-json :global(.number) {
+        color: #b5cea8;
+    }
+
+    .modal-json :global(.boolean) {
+        color: #569cd6;
+    }
+
+    .modal-json :global(.key) {
+        color: #9cdcfe;
+    }
+
+    .modal-json :global(.null) {
+        color: #569cd6;
+        font-style: italic;
     }
 </style>
