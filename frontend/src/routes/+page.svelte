@@ -249,22 +249,29 @@
     }
 
     .sidebar {
+        position: relative;
         width: 300px;
-        background: #252525;
-        border-right: 1px solid #3c3c3c;
-        overflow-y: auto;
-        resize: horizontal;
+        background: #2e2e2e;
+        border-right: 0px solid #3c3c3c;
+        overflow: hidden;
     }
 
     .resizer {
-        all: unset; /* Remove default button styles */
-        width: 5px;
-        cursor: ew-resize;
-        background: #3c3c3c;
         position: absolute;
         top: 0;
-        bottom: 0;
         right: 0;
+        width: 5px;
+        height: 100%;
+        cursor: ew-resize;
+        background: #444;
+        z-index: 1;
+        padding-inline-end: 2px;
+        padding-inline-start: 2px;
+        border: none;
+    }
+
+    .resizer:hover {
+        background: #666;
     }
 
     .viewer {
