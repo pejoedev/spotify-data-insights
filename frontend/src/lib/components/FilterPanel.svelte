@@ -1,8 +1,10 @@
 <script lang="ts">
     import type { Writable } from "svelte/store";
+    import { writable } from "svelte/store";
 
     export let data: any[];
     export let filters: Writable<Record<string, any>>;
+    export let filteredData: Writable<any[]>;
 
     interface FieldInfo {
         name: string;
@@ -14,17 +16,18 @@
 
     let fieldInfo: FieldInfo[] = [];
     let showFilters = true;
+    let isLoading = writable(false);
 
     $: {
         if (data && data.length > 0) {
             analyzeFields(data);
+            filteredData.set(data);
         }
     }
 
     function analyzeFields(items: any[]) {
         const fields = new Map<string, FieldInfo>();
 
-        // Analyze first item to get all keys
         const firstItem = items[0];
         for (const key of Object.keys(firstItem)) {
             const values = items
@@ -36,13 +39,11 @@
             const sampleValue = values[0];
             let fieldType: FieldInfo["type"] = "string";
 
-            // Detect type
             if (typeof sampleValue === "boolean") {
                 fieldType = "boolean";
             } else if (typeof sampleValue === "number") {
                 fieldType = "number";
             } else if (typeof sampleValue === "string") {
-                // Check if it's a date
                 if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(sampleValue)) {
                     fieldType = "date";
                 } else {
@@ -52,7 +53,6 @@
 
             const info: FieldInfo = { name: key, type: fieldType };
 
-            // Collect additional info based on type
             if (fieldType === "number") {
                 const numbers = values.map(Number).filter((n) => !isNaN(n));
                 info.min = Math.min(...numbers);
@@ -85,8 +85,58 @@
         });
     }
 
-    function clearAllFilters() {
-        filters.set({});
+    async function clearAllFilters() {
+        isLoading.set(true);
+        try {
+            filters.set({});
+            await new Promise((resolve) => setTimeout(resolve, 300));
+            applyFilters();
+        } finally {
+            isLoading.set(false);
+        }
+    }
+
+    function applyFilters() {
+        isLoading.set(true);
+        try {
+            const activeFilters = $filters;
+            const filtered = data.filter((item) => {
+                return Object.entries(activeFilters).every(([key, value]) => {
+                    if (value === null || value === undefined) return true;
+
+                    if (
+                        typeof value === "object" &&
+                        value.min !== undefined &&
+                        value.max !== undefined
+                    ) {
+                        return (
+                            (value.min === null || item[key] >= value.min) &&
+                            (value.max === null || item[key] <= value.max)
+                        );
+                    } else if (
+                        typeof value === "object" &&
+                        value.from !== undefined &&
+                        value.to !== undefined
+                    ) {
+                        const itemDate = new Date(item[key]);
+                        const fromDate = value.from
+                            ? new Date(value.from)
+                            : null;
+                        const toDate = value.to ? new Date(value.to) : null;
+                        return (
+                            (fromDate === null || itemDate >= fromDate) &&
+                            (toDate === null || itemDate <= toDate)
+                        );
+                    } else {
+                        return item[key] === value;
+                    }
+                });
+            });
+
+            filteredData.set(filtered);
+        } finally {
+            isLoading.set(false);
+        }
     }
 </script>
 
@@ -99,9 +149,17 @@
             {showFilters ? "▼" : "▶"} Filters
         </button>
         {#if showFilters && Object.keys($filters).length > 0}
-            <button class="clear-btn" on:click={clearAllFilters}
-                >Clear All</button
+            <button
+                class="clear-btn"
+                on:click={clearAllFilters}
+                disabled={$isLoading}
             >
+                {#if $isLoading}
+                    Clearing...
+                {:else}
+                    Clear All
+                {/if}
+            </button>
         {/if}
     </div>
 
@@ -217,6 +275,17 @@
                     {/if}
                 </div>
             {/each}
+            <button
+                class="apply-btn"
+                on:click={applyFilters}
+                disabled={$isLoading}
+            >
+                {#if $isLoading}
+                    Applying...
+                {:else}
+                    Apply Filters
+                {/if}
+            </button>
         </div>
     {/if}
 </div>
@@ -333,6 +402,22 @@
         flex: 1 1 80px;
         min-width: 0;
         max-width: 100px;
+    }
+
+    .apply-btn {
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        background: #0e639c;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background 0.2s;
+    }
+
+    .apply-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 
     .collapsed .filters-content {

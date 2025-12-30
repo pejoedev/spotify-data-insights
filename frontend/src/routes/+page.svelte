@@ -2,12 +2,23 @@
     import { onMount } from "svelte";
     import FileExplorer from "$lib/components/FileExplorer.svelte";
     import FileViewer from "$lib/components/FileViewer.svelte";
+    import FilterPanel from "$lib/components/FilterPanel.svelte";
+    import { writable } from "svelte/store";
     import { selectedFile, fileTree } from "$lib/stores/fileStore";
     import {
         uploadZipFile,
         getUploadedFolders,
         getFileTree,
     } from "$lib/api/files";
+
+    interface DataItem {
+        name: string;
+        value: number;
+    }
+
+    let data: DataItem[] = []; // Explicitly typed data array
+    let filters = writable<Record<string, any>>({});
+    let filteredData = writable<DataItem[]>(data); // Explicitly typed filtered data
 
     let uploading = false;
     let error = "";
@@ -106,6 +117,21 @@
             window.removeEventListener("mouseup", stopResizing);
         };
     });
+
+    // Simulate loading data on mount
+    onMount(async () => {
+        data = await fetchData(); // Replace with actual data fetching logic
+        filteredData.set(data);
+    });
+
+    async function fetchData(): Promise<DataItem[]> {
+        // Simulate fetching data
+        return [
+            { name: "Item 1", value: 10 },
+            { name: "Item 2", value: 20 },
+            { name: "Item 3", value: 30 },
+        ];
+    }
 </script>
 
 <div class="app">
@@ -129,6 +155,7 @@
     <div class="main-content">
         <aside class="sidebar" style="width: {sidebarWidth}px;">
             <FileExplorer />
+            <FilterPanel {data} {filters} bind:filteredData />
             <button
                 class="resizer"
                 aria-label="Resize sidebar"

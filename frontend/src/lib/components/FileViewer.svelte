@@ -1,19 +1,43 @@
 <script lang="ts">
-    import { fileTree } from "$lib/stores/fileStore";
+    import { selectedFile, fileContent } from "$lib/stores/fileStore";
+    import { getFileContent } from "$lib/api/files";
+    import { onMount } from "svelte";
+    import JsonViewer from "./JsonViewer.svelte";
     import {
         renameFile,
         deleteFile,
         getFileTree,
         getUploadedFolders,
     } from "$lib/api/files";
+
+    let loading = false;
+    let error = "";
     let showActions = true;
     let actionsLoading = false;
+
+    $: if ($selectedFile) {
+        loadFile($selectedFile);
+    }
+
+    async function loadFile(path: string) {
+        loading = true;
+        error = "";
+
+        try {
+            const content = await getFileContent(path);
+            fileContent.set(content);
+        } catch (e) {
+            error = e instanceof Error ? e.message : "Failed to load file";
+            fileContent.set(null);
+        } finally {
+            loading = false;
+        }
+    }
 
     async function refreshFileTree() {
         const result = await getUploadedFolders();
         const folders = result.folders;
         if (folders.length === 0) {
-            fileTree.set([]);
             return;
         }
         const trees = await Promise.all(
@@ -27,7 +51,6 @@
                 };
             }),
         );
-        fileTree.set(trees);
     }
 
     async function handleRename() {
@@ -60,32 +83,6 @@
             alert("Delete failed: " + (e instanceof Error ? e.message : e));
         } finally {
             actionsLoading = false;
-        }
-    }
-    import { selectedFile, fileContent } from "$lib/stores/fileStore";
-    import { getFileContent } from "$lib/api/files";
-    import { onMount } from "svelte";
-    import JsonViewer from "./JsonViewer.svelte";
-
-    let loading = false;
-    let error = "";
-
-    $: if ($selectedFile) {
-        loadFile($selectedFile);
-    }
-
-    async function loadFile(path: string) {
-        loading = true;
-        error = "";
-
-        try {
-            const content = await getFileContent(path);
-            fileContent.set(content);
-        } catch (e) {
-            error = e instanceof Error ? e.message : "Failed to load file";
-            fileContent.set(null);
-        } finally {
-            loading = false;
         }
     }
 </script>
