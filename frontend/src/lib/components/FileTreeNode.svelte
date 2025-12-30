@@ -1,6 +1,61 @@
 <script lang="ts">
-    import { selectedFile, expandedFolders } from "$lib/stores/fileStore";
+    import {
+        selectedFile,
+        expandedFolders,
+        fileTree,
+    } from "$lib/stores/fileStore";
     import type { FileNode } from "$lib/stores/fileStore";
+
+    import {
+        renameFile,
+        deleteFile,
+        getFileTree,
+        getUploadedFolders,
+    } from "$lib/api/files";
+
+    async function refreshFileTree() {
+        const result = await getUploadedFolders();
+        const folders = result.folders;
+        if (folders.length === 0) {
+            fileTree.set([]);
+            return;
+        }
+        const trees = await Promise.all(
+            folders.map(async (folder) => {
+                const res = await getFileTree(folder);
+                return {
+                    name: folder,
+                    path: folder,
+                    type: "directory",
+                    children: res.fileTree,
+                };
+            }),
+        );
+        fileTree.set(trees);
+    }
+
+    async function renameNode(event: Event) {
+        event.stopPropagation();
+        const newName = prompt("Rename to:", node.name);
+        if (!newName || newName === node.name) return;
+        try {
+            await renameFile(node.path, newName);
+            await refreshFileTree();
+        } catch (e) {
+            alert("Rename failed: " + (e instanceof Error ? e.message : e));
+        }
+    }
+
+    async function deleteNode(event: Event) {
+        event.stopPropagation();
+        if (!confirm(`Delete '${node.name}'? This cannot be undone.`)) return;
+        try {
+            await deleteFile(node.path);
+            await refreshFileTree();
+        } catch (e) {
+            alert("Delete failed: " + (e instanceof Error ? e.message : e));
+        }
+    }
 
     export let node: FileNode;
     export let level: number = 0;
@@ -66,6 +121,12 @@
             <span class="icon">{getIcon(node)}</span>
             <span class="name">{node.name}</span>
         </button>
+        <button class="action-btn rename" title="Rename" on:click={renameNode}
+            >✏️</button
+        >
+        <button class="action-btn delete" title="Delete" on:click={deleteNode}
+            >🗑️</button
+        >
     </div>
     {#if node.type === "directory" && $expandedFolders.has(node.path) && node.children}
         <div class="children">
@@ -126,5 +187,20 @@
         display: flex;
         flex-direction: column;
         /* No margin-left; rely on .tree-item padding for indentation */
+    }
+    .action-btn {
+        background: none;
+        border: none;
+        color: #858585;
+        cursor: pointer;
+        margin-left: 0.2em;
+        font-size: 1em;
+        padding: 0 0.2em;
+        opacity: 0.7;
+        transition: opacity 0.1s;
+    }
+    .action-btn:hover {
+        opacity: 1;
+        color: #e0e0e0;
     }
 </style>
