@@ -55,3 +55,21 @@ export async function deleteFile(path: string) {
 
     return response.json();
 }
+
+export async function getUploadedFolders() {
+    const response = await fetch(`${API_BASE}/files/list`);
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch folders');
+    }
+    return response.json();
+}
+
+export async function getFileTree(folderName: string) {
+    const response = await fetch(`${API_BASE}/files/tree/${encodeURIComponent(folderName)}`);
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch file tree');
+    }
+    return response.json();
+}

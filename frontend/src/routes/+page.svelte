@@ -1,11 +1,18 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import FileExplorer from "$lib/components/FileExplorer.svelte";
     import FileViewer from "$lib/components/FileViewer.svelte";
     import { selectedFile, fileTree } from "$lib/stores/fileStore";
-    import { uploadZipFile } from "$lib/api/files";
+    import {
+        uploadZipFile,
+        getUploadedFolders,
+        getFileTree,
+    } from "$lib/api/files";
 
     let uploading = false;
     let error = "";
+    let folders: string[] = [];
+    let selectedFolder: string | null = null;
 
     async function handleFileUpload(event: Event) {
         const input = event.target as HTMLInputElement;
@@ -19,6 +26,8 @@
         try {
             const result = await uploadZipFile(file);
             fileTree.set(result.fileTree);
+            await loadFolders();
+            selectedFolder = result.folderName;
         } catch (e) {
             error = e instanceof Error ? e.message : "Failed to upload file";
         } finally {
@@ -26,6 +35,35 @@
             input.value = "";
         }
     }
+
+    async function loadFolders() {
+        try {
+            const result = await getUploadedFolders();
+            folders = result.folders;
+            if (folders.length > 0 && !selectedFolder) {
+                selectedFolder = folders[folders.length - 1];
+            }
+        } catch (e) {
+            error = e instanceof Error ? e.message : "Failed to load folders";
+        }
+    }
+
+    async function loadFileTree(folder: string) {
+        try {
+            const result = await getFileTree(folder);
+            fileTree.set(result.fileTree);
+        } catch (e) {
+            error = e instanceof Error ? e.message : "Failed to load file tree";
+        }
+    }
+
+    $: if (selectedFolder) {
+        loadFileTree(selectedFolder);
+    }
+
+    onMount(() => {
+        loadFolders();
+    });
 </script>
 
 <div class="app">
@@ -48,6 +86,27 @@
 
     <div class="main-content">
         <aside class="sidebar">
+            <div class="folder-list">
+                <h2>Uploaded Folders</h2>
+                {#if folders.length === 0}
+                    <div class="empty">No uploads yet</div>
+                {:else}
+                    <ul>
+                        {#each folders as folder}
+                            <li>
+                                <button
+                                    class:selected={selectedFolder === folder}
+                                    on:click={() => {
+                                        selectedFolder = folder;
+                                    }}
+                                >
+                                    {folder}
+                                </button>
+                            </li>
+                        {/each}
+                    </ul>
+                {/if}
+            </div>
             <FileExplorer />
         </aside>
         <main class="viewer">
@@ -167,5 +226,46 @@
     .hint {
         font-size: 0.9rem;
         opacity: 0.7;
+    }
+
+    .folder-list {
+        padding: 1rem;
+        border-bottom: 1px solid #3c3c3c;
+    }
+
+    .folder-list h2 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1rem;
+        color: #4ec9b0;
+    }
+
+    .folder-list ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .folder-list li {
+        margin-bottom: 0.5rem;
+    }
+
+    .folder-list button {
+        background: none;
+        border: none;
+        color: #cccccc;
+        cursor: pointer;
+        font-size: 0.95rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        transition: background 0.1s;
+    }
+
+    .folder-list button.selected {
+        background: #094771;
+        color: #fff;
+    }
+
+    .folder-list button:hover {
+        background: #2a2d2e;
     }
 </style>
