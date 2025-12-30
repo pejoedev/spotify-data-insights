@@ -85,7 +85,7 @@
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(
-                /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+                /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?|\b(true|false|null)\b)/g,
                 (match) => {
                     let cls = "number";
                     if (/^"/.test(match)) {
@@ -156,67 +156,86 @@
 </script>
 
 <div class="json-viewer">
-    <div class="file-header">
-        {#if isArray && parsedData}
-            <span class="item-count"
-                >{$filteredData.length} / {parsedData.length} items</span
-            >
-        {/if}
-    </div>
-
-    {#if $filteredData.length > 0}
-        {#if isArray}
-            <FilterPanel data={parsedData} {filters} {filteredData} />
-        {/if}
-
-        <div class="list-view">
-            {#each $filteredData as item, index}
-                <div class="list-item">
-                    <div class="item-header-wrapper">
-                        <button
-                            class="item-header"
-                            on:click={() => toggleItem(index)}
-                        >
-                            <span class="toggle-icon"
-                                >{$expandedItems.has(index) ? "▼" : "▶"}</span
-                            >
-                            <span class="item-preview">
-                                {#each Object.entries(item).slice(0, 2) as [key, value]}
-                                    <span class="preview-field">
-                                        <span class="key">{key}:</span>
-                                        <span class="value"
-                                            >{String(value).slice(0, 50)}</span
-                                        >
-                                    </span>
-                                {/each}
-                            </span>
-                        </button>
-                        <button
-                            class="view-json-btn"
-                            on:click={() => openModal(item)}
-                            title="View full JSON"
-                        >
-                            View JSON
-                        </button>
-                    </div>
-
-                    {#if $expandedItems.has(index)}
-                        <div class="item-content">
-                            {#each Object.entries(item) as [key, value]}
-                                <div class="field">
-                                    <span class="field-key">{key}:</span>
-                                    <span class="field-value"
-                                        >{@html formatValue(key, value)}</span
-                                    >
-                                </div>
-                            {/each}
-                        </div>
-                    {/if}
-                </div>
-            {/each}
+    {#if !isArray && $filteredData.length > 0}
+        <!-- Single object view - show full prettified JSON -->
+        <div class="file-header">
+            <h2>JSON Object</h2>
         </div>
+        <pre class="modal-json single-object">{@html highlightJson(
+                JSON.stringify($filteredData[0], null, 2),
+            )}</pre>
     {:else}
-        <pre class="raw-json">{content}</pre>
+        <!-- Array view -->
+        <div class="file-header">
+            {#if isArray && parsedData}
+                <span class="item-count"
+                    >{$filteredData.length} / {parsedData.length} items</span
+                >
+            {/if}
+        </div>
+
+        {#if $filteredData.length > 0}
+            {#if isArray}
+                <FilterPanel data={parsedData} {filters} {filteredData} />
+            {/if}
+
+            <div class="list-view">
+                {#each $filteredData as item, index}
+                    <div class="list-item">
+                        <div class="item-header-wrapper">
+                            <button
+                                class="item-header"
+                                on:click={() => toggleItem(index)}
+                            >
+                                <span class="toggle-icon"
+                                    >{$expandedItems.has(index)
+                                        ? "▼"
+                                        : "▶"}</span
+                                >
+                                <span class="item-preview">
+                                    {#each Object.entries(item).slice(0, 2) as [key, value]}
+                                        <span class="preview-field">
+                                            <span class="key">{key}:</span>
+                                            <span class="value"
+                                                >{String(value).slice(
+                                                    0,
+                                                    50,
+                                                )}</span
+                                            >
+                                        </span>
+                                    {/each}
+                                </span>
+                            </button>
+                            <button
+                                class="view-json-btn"
+                                on:click={() => openModal(item)}
+                                title="View full JSON"
+                            >
+                                View JSON
+                            </button>
+                        </div>
+
+                        {#if $expandedItems.has(index)}
+                            <div class="item-content">
+                                {#each Object.entries(item) as [key, value]}
+                                    <div class="field">
+                                        <span class="field-key">{key}:</span>
+                                        <span class="field-value"
+                                            >{@html formatValue(
+                                                key,
+                                                value,
+                                            )}</span
+                                        >
+                                    </div>
+                                {/each}
+                            </div>
+                        {/if}
+                    </div>
+                {/each}
+            </div>
+        {:else}
+            <pre class="raw-json">{content}</pre>
+        {/if}
     {/if}
 </div>
 
@@ -254,6 +273,12 @@
         padding: 0.75rem 1rem;
         background: #252525;
         border-bottom: 1px solid #3c3c3c;
+    }
+
+    .file-header h2 {
+        margin: 0;
+        color: #cccccc;
+        font-size: 1rem;
     }
 
     .item-count {
@@ -474,6 +499,11 @@
         line-height: 1.5;
         overflow: auto;
         color: #d4d4d4;
+    }
+
+    .modal-json.single-object {
+        background: #252525;
+        border-bottom: 1px solid #3c3c3c;
     }
 
     .modal-json :global(.string) {
