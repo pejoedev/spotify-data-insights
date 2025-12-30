@@ -39,7 +39,22 @@
         const newName = prompt("Rename to:", node.name);
         if (!newName || newName === node.name) return;
         try {
-            await renameFile(node.path, newName);
+            const result = await renameFile(node.path, newName);
+            // If the selected file is affected by the rename, update its path
+            if ($selectedFile) {
+                // If renaming a file
+                if (node.type === "file" && $selectedFile === node.path) {
+                    selectedFile.set(result.newPath);
+                }
+                // If renaming a folder and the selected file is inside it
+                if (
+                    node.type === "directory" &&
+                    $selectedFile.startsWith(node.path + "/")
+                ) {
+                    const suffix = $selectedFile.slice(node.path.length);
+                    selectedFile.set(result.newPath + suffix);
+                }
+            }
             await refreshFileTree();
         } catch (e) {
             alert("Rename failed: " + (e instanceof Error ? e.message : e));
@@ -50,6 +65,14 @@
         event.stopPropagation();
         if (!confirm(`Delete '${node.name}'? This cannot be undone.`)) return;
         try {
+            // If the selected file is being deleted (or is inside this folder), clear it
+            if (
+                $selectedFile &&
+                ($selectedFile === node.path ||
+                    $selectedFile.startsWith(node.path + "/"))
+            ) {
+                selectedFile.set(null);
+            }
             await deleteFile(node.path);
             await refreshFileTree();
         } catch (e) {

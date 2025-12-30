@@ -27,7 +27,7 @@
         try {
             const result = await uploadZipFile(file);
             fileTree.set(result.fileTree);
-            await loadFolders();
+            await loadFoldersAndTrees();
             selectedFolder = result.folderName;
         } catch (e) {
             error = e instanceof Error ? e.message : "Failed to upload file";
