@@ -1,0 +1,13 @@
+# Ignore uploaded files
+uploads/
+temp/
+
+# Node modules
+node_modules/
+
+# Build output
+dist/
+
+# Environment files
+.env
+.env.local
