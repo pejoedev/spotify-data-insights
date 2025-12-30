@@ -37,11 +37,29 @@
         }
     }
 
-    async function loadFolders() {
+    async function loadFoldersAndTrees() {
         try {
             const result = await getUploadedFolders();
             folders = result.folders;
-            if (folders.length > 0 && !selectedFolder) {
+            if (folders.length === 0) {
+                fileTree.set([]);
+                return;
+            }
+            // Fetch all file trees in parallel
+            const trees = await Promise.all(
+                folders.map(async (folder) => {
+                    const res = await getFileTree(folder);
+                    // Wrap each tree as a root folder node
+                    return {
+                        name: folder,
+                        path: folder,
+                        type: "directory",
+                        children: res.fileTree,
+                    };
+                }),
+            );
+            fileTree.set(trees);
+            if (!selectedFolder) {
                 selectedFolder = folders[folders.length - 1];
             }
         } catch (e) {
@@ -49,19 +67,9 @@
         }
     }
 
-    async function loadFileTree(folder: string) {
-        try {
-            const result = await getFileTree(folder);
-            fileTree.set(result.fileTree);
-        } catch (e) {
-            error = e instanceof Error ? e.message : "Failed to load file tree";
-        }
-    }
-
-    $: if (selectedFolder) {
-        loadFileTree(selectedFolder);
+    $: if (folders.length > 0) {
         if (typeof localStorage !== "undefined") {
-            localStorage.setItem(folderKey, selectedFolder);
+            localStorage.setItem(folderKey, selectedFolder ?? "");
         }
     }
 
@@ -70,7 +78,7 @@
             const saved = localStorage.getItem(folderKey);
             if (saved) selectedFolder = saved;
         }
-        loadFolders();
+        loadFoldersAndTrees();
     });
 </script>
 
@@ -94,27 +102,7 @@
 
     <div class="main-content">
         <aside class="sidebar">
-            <div class="folder-list">
-                <h2>Uploaded Folders</h2>
-                {#if folders.length === 0}
-                    <div class="empty">No uploads yet</div>
-                {:else}
-                    <ul>
-                        {#each folders as folder}
-                            <li>
-                                <button
-                                    class:selected={selectedFolder === folder}
-                                    on:click={() => {
-                                        selectedFolder = folder;
-                                    }}
-                                >
-                                    {folder}
-                                </button>
-                            </li>
-                        {/each}
-                    </ul>
-                {/if}
-            </div>
+            <!-- folder-list removed -->
             <FileExplorer />
         </aside>
         <main class="viewer">

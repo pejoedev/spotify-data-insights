@@ -46,25 +46,53 @@
 </script>
 
 <div class="tree-item" style="padding-left: {level * 12}px">
-    <button
-        class="item-button"
-        class:selected={node.type === "file" && $selectedFile === node.path}
-        on:click={() => selectFile(node.path, node.type)}
-    >
-        <span class="icon">{getIcon(node)}</span>
-        <span class="name">{node.name}</span>
-    </button>
-
+    <div class="tree-row">
+        {#if node.type === "directory"}
+            <span
+                class="chevron"
+                on:click={() => toggleFolder(node.path)}
+                style="cursor: pointer;"
+            >
+                {#if node.children && node.children.length > 0}
+                    {$expandedFolders.has(node.path) ? "▼" : "▶"}
+                {/if}
+            </span>
+        {/if}
+        <button
+            class="item-button"
+            class:selected={node.type === "file" && $selectedFile === node.path}
+            on:click={() => selectFile(node.path, node.type)}
+        >
+            <span class="icon">{getIcon(node)}</span>
+            <span class="name">{node.name}</span>
+        </button>
+    </div>
     {#if node.type === "directory" && $expandedFolders.has(node.path) && node.children}
-        {#each node.children as child}
-            <FileTreeNode node={child} level={level + 1} />
-        {/each}
+        <div class="children">
+            {#each node.children as child}
+                <svelte:self node={child} level={level + 1} />
+            {/each}
+        </div>
     {/if}
 </div>
 
 <style>
     .tree-item {
         user-select: none;
+        display: flex;
+        flex-direction: column;
+    }
+    .tree-row {
+        display: flex;
+        align-items: center;
+    }
+    .chevron {
+        width: 1.1em;
+        display: inline-block;
+        text-align: center;
+        color: #858585;
+        font-size: 0.9em;
+        margin-right: 0.1em;
     }
     .item-button {
         display: flex;
@@ -93,5 +121,10 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+    .children {
+        display: flex;
+        flex-direction: column;
+        /* No margin-left; rely on .tree-item padding for indentation */
     }
 </style>
