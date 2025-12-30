@@ -40,8 +40,13 @@
         try {
             parsedData = JSON.parse(content);
             isArray = Array.isArray(parsedData);
-            if (isArray && parsedData) {
+            if (isArray) {
                 filteredData.set(parsedData);
+            } else if (parsedData !== null && typeof parsedData === "object") {
+                // Convert single object to array with one item
+                filteredData.set([parsedData]);
+            } else {
+                filteredData.set([]);
             }
         } catch (e) {
             parsedData = null;
@@ -67,7 +72,8 @@
             /spotify:(track|album|artist|playlist|user):([a-zA-Z0-9]+)/g,
             (match, type, id) => {
                 const url = `https://open.spotify.com/${type}/${id}`;
-                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="spotify-link">${match}</a>`;
+                return `<a href="${url}" target="_blank" rel="noopener"
+                 class="spotify-link">${match}</a>`;
             },
         );
     }
@@ -99,7 +105,8 @@
                 .slice(0, 3)
                 .map(
                     ([k, v]) =>
-                        `<span class="key">${k}:</span> ${formatValue(k, v, depth + 1)}`,
+                        `<span class="key">${k}:</span>
+                         ${formatValue(k, v, depth + 1)}`,
                 )
                 .join(", ");
             return `{
@@ -120,8 +127,10 @@
         {/if}
     </div>
 
-    {#if isArray && parsedData && parsedData.length > 0}
-        <FilterPanel data={parsedData} {filters} {filteredData} />
+    {#if $filteredData.length > 0}
+        {#if isArray}
+            <FilterPanel data={parsedData} {filters} {filteredData} />
+        {/if}
 
         <div class="list-view">
             {#each $filteredData as item, index}
