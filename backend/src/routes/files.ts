@@ -193,4 +193,35 @@ router.delete('/delete', (req: Request, res: Response) => {
     }
 });
 
+/**
+ * GET /api/files/raw
+ * Stream file as binary (for PDF, images, etc.)
+ */
+router.get('/raw', (req: Request, res: Response) => {
+    try {
+        const filePath = req.query.path as string;
+        if (!filePath) {
+            return res.status(400).json({ error: 'File path is required' });
+        }
+        const validation = validateFilePath(filePath);
+        if (!validation.valid) {
+            return res.status(400).json({ error: validation.error });
+        }
+        if (!fs.existsSync(validation.absolutePath!)) {
+            return res.status(404).json({ error: 'File not found' });
+        }
+        const ext = path.extname(filePath).toLowerCase();
+        let mime = 'application/octet-stream';
+        if (ext === '.pdf') mime = 'application/pdf';
+        else if (ext === '.png') mime = 'image/png';
+        else if (ext === '.jpg' || ext === '.jpeg') mime = 'image/jpeg';
+        else if (ext === '.txt') mime = 'text/plain';
+        res.setHeader('Content-Type', mime);
+        fs.createReadStream(validation.absolutePath!).pipe(res);
+    } catch (error) {
+        console.error('Raw file error:', error);
+        res.status(500).json({ error: 'Failed to stream file' });
+    }
+});
+
 export { router as filesRouter };

@@ -43,7 +43,12 @@
             />
         {:else if $fileContent.extension === ".pdf"}
             <div class="pdf-viewer">
-                <p>PDF viewing not yet implemented</p>
+                <embed
+                    src={`http://localhost:3001/api/files/raw?path=${encodeURIComponent($fileContent.path)}`}
+                    type="application/pdf"
+                    width="100%"
+                    height="800px"
+                />
                 <p class="hint">Path: {$fileContent.path}</p>
             </div>
         {:else}
