@@ -13,6 +13,7 @@
     let error = "";
     let folders: string[] = [];
     let selectedFolder: string | null = null;
+    const folderKey = "selectedFolder";
 
     async function handleFileUpload(event: Event) {
         const input = event.target as HTMLInputElement;
@@ -59,9 +60,16 @@
 
     $: if (selectedFolder) {
         loadFileTree(selectedFolder);
+        if (typeof localStorage !== "undefined") {
+            localStorage.setItem(folderKey, selectedFolder);
+        }
     }
 
     onMount(() => {
+        if (typeof localStorage !== "undefined") {
+            const saved = localStorage.getItem(folderKey);
+            if (saved) selectedFolder = saved;
+        }
         loadFolders();
     });
 </script>

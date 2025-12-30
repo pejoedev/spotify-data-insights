@@ -18,7 +18,6 @@
 <style>
     .file-explorer {
         height: 100%;
-        overflow-y: auto;
     }
 
     .empty {

@@ -323,11 +323,16 @@
 
     .range-inputs {
         display: flex;
-        gap: 0.5rem;
+        gap: 0.25rem;
+        flex-wrap: wrap;
+        min-width: 0;
+        max-width: 220px;
     }
 
     .range-inputs input {
-        flex: 1;
+        flex: 1 1 80px;
+        min-width: 0;
+        max-width: 100px;
     }
 
     .collapsed .filters-content {
