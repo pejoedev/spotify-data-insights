@@ -196,67 +196,71 @@
             {/if}
         </div>
 
-        {#if $filteredData.length > 0}
+        {#if $filteredData.length > 0 || isArray}
             {#if isArray}
                 <FilterPanel data={parsedData} {filters} {filteredData} />
             {/if}
 
-            <div class="list-view">
-                {#each $filteredData as item, index}
-                    <div class="list-item">
-                        <div class="item-header-wrapper">
-                            <button
-                                class="item-header"
-                                on:click={() => toggleItem(index)}
-                            >
-                                <span class="toggle-icon"
-                                    >{$expandedItems.has(index)
-                                        ? "▼"
-                                        : "▶"}</span
+            {#if $filteredData.length > 0}
+                <div class="list-view">
+                    {#each $filteredData as item, index}
+                        <div class="list-item">
+                            <div class="item-header-wrapper">
+                                <button
+                                    class="item-header"
+                                    on:click={() => toggleItem(index)}
                                 >
-                                <span class="item-preview">
-                                    {#each Object.entries(item).slice(0, 2) as [key, value]}
-                                        <span class="preview-field">
-                                            <span class="key">{key}:</span>
-                                            <span class="value"
-                                                >{String(value).slice(
-                                                    0,
-                                                    50,
+                                    <span class="toggle-icon"
+                                        >{$expandedItems.has(index)
+                                            ? "▼"
+                                            : "▶"}</span
+                                    >
+                                    <span class="item-preview">
+                                        {#each Object.entries(item).slice(0, 2) as [key, value]}
+                                            <span class="preview-field">
+                                                <span class="key">{key}:</span>
+                                                <span class="value"
+                                                    >{String(value).slice(
+                                                        0,
+                                                        50,
+                                                    )}</span
+                                                >
+                                            </span>
+                                        {/each}
+                                    </span>
+                                </button>
+                                <button
+                                    class="view-json-btn"
+                                    on:click={() => openModal(item)}
+                                    title="View full JSON"
+                                >
+                                    View JSON
+                                </button>
+                            </div>
+
+                            {#if $expandedItems.has(index)}
+                                <div class="item-content">
+                                    {#each Object.entries(item) as [key, value]}
+                                        <div class="field">
+                                            <span class="field-key">{key}</span>
+                                            <span class="field-value"
+                                                >{@html formatValue(
+                                                    key,
+                                                    value,
                                                 )}</span
                                             >
-                                        </span>
+                                        </div>
                                     {/each}
-                                </span>
-                            </button>
-                            <button
-                                class="view-json-btn"
-                                on:click={() => openModal(item)}
-                                title="View full JSON"
-                            >
-                                View JSON
-                            </button>
+                                </div>
+                            {/if}
                         </div>
-
-                        {#if $expandedItems.has(index)}
-                            <div class="item-content">
-                                {#each Object.entries(item) as [key, value]}
-                                    <div class="field">
-                                        <span class="field-key">{key}:</span>
-                                        <span class="field-value"
-                                            >{@html formatValue(
-                                                key,
-                                                value,
-                                            )}</span
-                                        >
-                                    </div>
-                                {/each}
-                            </div>
-                        {/if}
-                    </div>
-                {/each}
-            </div>
-        {:else}
-            <pre class="raw-json">{content}</pre>
+                    {/each}
+                </div>
+            {:else}
+                <div class="no-results">
+                    There is nothing to view with these filters.
+                </div>
+            {/if}
         {/if}
     {/if}
 </div>
@@ -559,5 +563,12 @@
 
     .modal-json :global(.spotify-link:hover) {
         color: #1ed760;
+    }
+
+    .no-results {
+        color: #cccccc;
+        padding: 1rem;
+        text-align: center;
+        font-size: 0.9rem;
     }
 </style>
