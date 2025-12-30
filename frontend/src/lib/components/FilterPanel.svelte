@@ -89,14 +89,14 @@
         isLoading.set(true);
         try {
             filters.set({});
-            await new Promise((resolve) => setTimeout(resolve, 300));
-            applyFilters();
+            await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate loading
+            filteredData.set(data); // Reset to full dataset
         } finally {
             isLoading.set(false);
         }
     }
 
-    function applyFilters() {
+    async function applyFilters() {
         isLoading.set(true);
         try {
             const activeFilters = $filters;
@@ -133,6 +133,7 @@
                 });
             });
 
+            await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate loading
             filteredData.set(filtered);
         } finally {
             isLoading.set(false);
@@ -413,6 +414,7 @@
         cursor: pointer;
         font-size: 0.9rem;
         transition: background 0.2s;
+        border: none;
     }
 
     .apply-btn:disabled {
