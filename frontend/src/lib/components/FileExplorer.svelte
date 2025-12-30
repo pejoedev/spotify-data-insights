@@ -29,5 +29,7 @@
 
     .tree {
         padding: 0.5rem 0;
+        overflow-y: auto; /* Added to make the tree scrollable */
+        max-height: 100%; /* Ensures the tree does not exceed its container's height */
     }
 </style>
