@@ -2,6 +2,10 @@
     import { writable } from "svelte/store";
     import FilterPanel from "./FilterPanel.svelte";
 
+    function getFilterKey(path: string) {
+        return `filters:${path}`;
+    }
+
     export let content: string;
     export let path: string;
 
@@ -10,6 +14,27 @@
     let expandedItems = writable<Set<number>>(new Set());
     let filters = writable<Record<string, any>>({});
     let filteredData: any[] = [];
+
+    $: {
+        // Restore filters from localStorage when path changes
+        if (isArray && path) {
+            const key = getFilterKey(path);
+            if (typeof localStorage !== "undefined") {
+                const stored = localStorage.getItem(key);
+                if (stored) {
+                    try {
+                        filters.set(JSON.parse(stored));
+                    } catch {}
+                }
+            }
+        }
+    }
+
+    filters.subscribe((value) => {
+        if (isArray && path && typeof localStorage !== "undefined") {
+            localStorage.setItem(getFilterKey(path), JSON.stringify(value));
+        }
+    });
 
     $: {
         try {
