@@ -72,7 +72,7 @@
         );
     }
 
-    function formatValue(key: string, value: any): string {
+    function formatValue(key: string, value: any, depth = 0): string {
         if (value === null || value === undefined)
             return '<span class="null">null</span>';
         if (typeof value === "boolean")
@@ -85,8 +85,28 @@
             }
             return `<span class="string">"${value}"</span>`;
         }
-        if (typeof value === "object")
-            return '<span class="object">{...}</span>';
+        if (Array.isArray(value)) {
+            return `[
+                ${value
+                    .slice(0, 3)
+                    .map((item) => formatValue("", item, depth + 1))
+                    .join(", ")}
+                ${value.length > 3 ? "..." : ""}
+            ]`;
+        }
+        if (typeof value === "object") {
+            const entries = Object.entries(value)
+                .slice(0, 3)
+                .map(
+                    ([k, v]) =>
+                        `<span class="key">${k}:</span> ${formatValue(k, v, depth + 1)}`,
+                )
+                .join(", ");
+            return `{
+                ${entries}
+                ${Object.keys(value).length > 3 ? "..." : ""}
+            }`;
+        }
         return String(value);
     }
 </script>
