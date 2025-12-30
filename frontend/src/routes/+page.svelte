@@ -193,7 +193,7 @@
     .app {
         display: flex;
         flex-direction: column;
-        height: 100vh;
+        height: 100svh; /* Changed from 100vh to 100svh to account for dynamic viewport height */
     }
 
     header {
@@ -246,6 +246,7 @@
         display: flex;
         flex: 1;
         overflow: hidden;
+        max-width: 100%; /* Ensure main-content does not exceed the screen width */
     }
 
     .sidebar {
@@ -253,7 +254,7 @@
         width: 300px;
         background: #2e2e2e;
         border-right: 0px solid #3c3c3c;
-        overflow: hidden;
+        overflow: auto; /* Changed from hidden to auto to make the sidebar scrollable */
     }
 
     .resizer {

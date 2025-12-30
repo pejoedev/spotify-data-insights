@@ -283,9 +283,12 @@
 
 <style>
     .json-viewer {
-        height: 100%;
+        height: auto; /* Changed from 100% to auto to allow dynamic height adjustment */
         display: flex;
         flex-direction: column;
+        overflow: auto; /* Added to prevent content from flowing outside the screen */
+        max-width: 100%; /* Added to ensure the element does not exceed the visible screen width */
+        box-sizing: border-box; /* Ensures padding and borders are included in the element's width */
     }
 
     .file-header {

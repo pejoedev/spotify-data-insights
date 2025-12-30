@@ -204,7 +204,9 @@
     }
     .file-viewer {
         height: 100%;
-        overflow: auto;
+        overflow: hidden; /* Changed from auto to hidden to make it non-scrollable */
+        display: flex;
+        flex-direction: column;
     }
 
     .loading,
