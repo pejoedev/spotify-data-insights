@@ -15,6 +15,9 @@
     let selectedFolder: string | null = null;
     const folderKey = "selectedFolder";
 
+    let sidebarWidth = 300; // Default width of the sidebar
+    let isResizing = false;
+
     async function handleFileUpload(event: Event) {
         const input = event.target as HTMLInputElement;
         const file = input.files?.[0];
@@ -53,7 +56,7 @@
                     return {
                         name: folder,
                         path: folder,
-                        type: "directory",
+                        type: "directory" as const, // Ensure type matches 'FileNode'
                         children: res.fileTree,
                     };
                 }),
@@ -80,6 +83,29 @@
         }
         loadFoldersAndTrees();
     });
+
+    function startResizing() {
+        isResizing = true;
+    }
+
+    function stopResizing() {
+        isResizing = false;
+    }
+
+    function resizeSidebar(event: MouseEvent) {
+        if (isResizing) {
+            sidebarWidth = Math.max(200, Math.min(600, event.clientX)); // Restrict width between 200px and 600px
+        }
+    }
+
+    onMount(() => {
+        window.addEventListener("mousemove", resizeSidebar);
+        window.addEventListener("mouseup", stopResizing);
+        return () => {
+            window.removeEventListener("mousemove", resizeSidebar);
+            window.removeEventListener("mouseup", stopResizing);
+        };
+    });
 </script>
 
 <div class="app">
@@ -101,9 +127,13 @@
     {/if}
 
     <div class="main-content">
-        <aside class="sidebar">
-            <!-- folder-list removed -->
+        <aside class="sidebar" style="width: {sidebarWidth}px;">
             <FileExplorer />
+            <button
+                class="resizer"
+                aria-label="Resize sidebar"
+                on:mousedown={startResizing}
+            ></button>
         </aside>
         <main class="viewer">
             {#if $selectedFile}
@@ -197,6 +227,18 @@
         background: #252525;
         border-right: 1px solid #3c3c3c;
         overflow-y: auto;
+        resize: horizontal;
+    }
+
+    .resizer {
+        all: unset; /* Remove default button styles */
+        width: 5px;
+        cursor: ew-resize;
+        background: #3c3c3c;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
     }
 
     .viewer {
@@ -222,46 +264,5 @@
     .hint {
         font-size: 0.9rem;
         opacity: 0.7;
-    }
-
-    .folder-list {
-        padding: 1rem;
-        border-bottom: 1px solid #3c3c3c;
-    }
-
-    .folder-list h2 {
-        margin: 0 0 0.5rem 0;
-        font-size: 1rem;
-        color: #4ec9b0;
-    }
-
-    .folder-list ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .folder-list li {
-        margin-bottom: 0.5rem;
-    }
-
-    .folder-list button {
-        background: none;
-        border: none;
-        color: #cccccc;
-        cursor: pointer;
-        font-size: 0.95rem;
-        padding: 0.25rem 0.5rem;
-        border-radius: 3px;
-        transition: background 0.1s;
-    }
-
-    .folder-list button.selected {
-        background: #094771;
-        color: #fff;
-    }
-
-    .folder-list button:hover {
-        background: #2a2d2e;
     }
 </style>
